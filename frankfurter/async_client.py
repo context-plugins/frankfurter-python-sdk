@@ -5,14 +5,14 @@ from types import TracebackType
 
 from typing_extensions import Self
 
-from .base_client import DEFAULT_TIMEOUT, BaseFrankfurterApiClient
+from .base_client import DEFAULT_TIMEOUT, BaseFrankfurterClient
 from .core import (
     ApiResult,
+    AsyncHttpClient,
+    AsyncHttpxClient,
+    AsyncRawClient,
     BaseRawResponse,
     Date,
-    HttpClient,
-    HttpxClient,
-    RawClient,
     RawError,
     RequestOptionsOrDict,
     json_decoder,
@@ -32,24 +32,26 @@ from .models.rate import Rate
 from .server.server import Server
 
 
-class FrankfurterApiClient(BaseFrankfurterApiClient[RawClient]):
+class AsyncFrankfurterClient(BaseFrankfurterClient[AsyncRawClient]):
     def __init__(
         self,
         *,
         base_url: str | None = None,
         timeout: float = DEFAULT_TIMEOUT,
-        custom_http_client: HttpClient | None = None,
+        custom_async_http_client: AsyncHttpClient | None = None,
     ) -> None:
         super().__init__(base_url=base_url, timeout=timeout)
-        self._raw_client = RawClient(
-            http_client=custom_http_client if custom_http_client is not None else HttpxClient(timeout=timeout)
+        self._raw_client = AsyncRawClient(
+            http_client=(
+                custom_async_http_client if custom_async_http_client is not None else AsyncHttpxClient(timeout=timeout)
+            ),
         )
 
     @cached_property
-    def with_raw_response(self) -> ApiWithRawResponse:
-        return ApiWithRawResponse(self._raw_client, self._server)
+    def with_raw_response(self) -> AsyncApiWithRawResponse:
+        return AsyncApiWithRawResponse(self._raw_client, self._server)
 
-    def get_currencies(
+    async def get_currencies(
         self,
         *,
         scope: ScopeOrStr | None = None,
@@ -69,11 +71,13 @@ class FrankfurterApiClient(BaseFrankfurterApiClient[RawClient]):
 
         Raises:
             ApiError: If the API responds with an error status code. ``error`` is ``RawError``."""
-        return self.with_raw_response.get_currencies(
-            scope=scope, providers=providers, request_options=request_options
+        return (
+            await self.with_raw_response.get_currencies(
+                scope=scope, providers=providers, request_options=request_options
+            )
         ).unwrap()
 
-    def get_currency(self, code: str, *, request_options: RequestOptionsOrDict | None = None) -> CurrencyDetail:
+    async def get_currency(self, code: str, *, request_options: RequestOptionsOrDict | None = None) -> CurrencyDetail:
         """Returns details for a single currency, including provider information or peg metadata.
 
         Args:
@@ -85,9 +89,9 @@ class FrankfurterApiClient(BaseFrankfurterApiClient[RawClient]):
 
         Raises:
             ApiError: No data found ``error`` is ``NotFound1 | RawError``."""
-        return self.with_raw_response.get_currency(code, request_options=request_options).unwrap()
+        return (await self.with_raw_response.get_currency(code, request_options=request_options)).unwrap()
 
-    def get_providers(self, *, request_options: RequestOptionsOrDict | None = None) -> list[Provider]:
+    async def get_providers(self, *, request_options: RequestOptionsOrDict | None = None) -> list[Provider]:
         """Returns available exchange rate data providers with their base currency.
 
         Args:
@@ -98,9 +102,9 @@ class FrankfurterApiClient(BaseFrankfurterApiClient[RawClient]):
 
         Raises:
             ApiError: If the API responds with an error status code. ``error`` is ``RawError``."""
-        return self.with_raw_response.get_providers(request_options=request_options).unwrap()
+        return (await self.with_raw_response.get_providers(request_options=request_options)).unwrap()
 
-    def get_rate(
+    async def get_rate(
         self,
         base: str,
         quote: str,
@@ -126,11 +130,13 @@ class FrankfurterApiClient(BaseFrankfurterApiClient[RawClient]):
             ApiError: Invalid request No data found The request deadline expired before the response could be computed.
                 Retry with a narrower request: filter with quotes, aggregate with group, or split the range into shorter
                 requests. ``error`` is ``NotFound1 | UnprocessableEntity1 | ServiceUnavailable1 | RawError``."""
-        return self.with_raw_response.get_rate(
-            base, quote, date=date, providers=providers, request_options=request_options
+        return (
+            await self.with_raw_response.get_rate(
+                base, quote, date=date, providers=providers, request_options=request_options
+            )
         ).unwrap()
 
-    def get_rates(
+    async def get_rates(
         self,
         *,
         date: Date | None = None,
@@ -175,32 +181,34 @@ class FrankfurterApiClient(BaseFrankfurterApiClient[RawClient]):
             ApiError: Invalid request No data found The request deadline expired before the response could be computed.
                 Retry with a narrower request: filter with quotes, aggregate with group, or split the range into shorter
                 requests. ``error`` is ``NotFound1 | UnprocessableEntity1 | ServiceUnavailable1 | RawError``."""
-        return self.with_raw_response.get_rates(
-            date=date,
-            from_=from_,
-            to=to,
-            base=base,
-            quotes=quotes,
-            providers=providers,
-            group=group,
-            expand=expand,
-            request_options=request_options,
+        return (
+            await self.with_raw_response.get_rates(
+                date=date,
+                from_=from_,
+                to=to,
+                base=base,
+                quotes=quotes,
+                providers=providers,
+                group=group,
+                expand=expand,
+                request_options=request_options,
+            )
         ).unwrap()
 
-    def close(self) -> None:
-        self._raw_client.http_client.close()
+    async def aclose(self) -> None:
+        await self._raw_client.http_client.aclose()
 
-    def __enter__(self) -> Self:
+    async def __aenter__(self) -> Self:
         return self
 
-    def __exit__(
+    async def __aexit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, exc_tb: TracebackType | None
     ) -> None:
-        self.close()
+        await self.aclose()
 
 
-class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
-    def get_currencies(
+class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
+    async def get_currencies(
         self,
         *,
         scope: ScopeOrStr | None = None,
@@ -217,7 +225,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
-        return self._client.execute(
+        return await self._client.execute(
             http_method="GET",
             url_template=self._server.default("/currencies"),
             query_params=[param[ScopeOrStr | None]("scope", scope), param[str | None]("providers", providers)],
@@ -226,7 +234,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
             request_options=request_options,
         )
 
-    def get_currency(
+    async def get_currency(
         self, code: str, *, request_options: RequestOptionsOrDict | None = None
     ) -> ApiResult[CurrencyDetail, GetCurrencyErrorBody]:
         """Returns details for a single currency, including provider information or peg metadata.
@@ -237,7 +245,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
-        return self._client.execute(
+        return await self._client.execute(
             http_method="GET",
             url_template=self._server.default("/currency/{code}"),
             path_params=[param[str]("code", code)],
@@ -246,7 +254,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
             request_options=request_options,
         )
 
-    def get_providers(
+    async def get_providers(
         self, *, request_options: RequestOptionsOrDict | None = None
     ) -> ApiResult[list[Provider], RawError]:
         """Returns available exchange rate data providers with their base currency.
@@ -256,7 +264,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
-        return self._client.execute(
+        return await self._client.execute(
             http_method="GET",
             url_template=self._server.default("/providers"),
             decoder=json_decoder[list[Provider]],
@@ -264,7 +272,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
             request_options=request_options,
         )
 
-    def get_rate(
+    async def get_rate(
         self,
         base: str,
         quote: str,
@@ -285,7 +293,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
-        return self._client.execute(
+        return await self._client.execute(
             http_method="GET",
             url_template=self._server.default("/rate/{base}/{quote}"),
             path_params=[param[str]("base", base), param[str]("quote", quote)],
@@ -295,7 +303,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
             request_options=request_options,
         )
 
-    def get_rates(
+    async def get_rates(
         self,
         *,
         date: Date | None = None,
@@ -335,7 +343,7 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
-        return self._client.execute(
+        return await self._client.execute(
             http_method="GET",
             url_template=self._server.default("/rates"),
             query_params=[
@@ -354,4 +362,4 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
         )
 
 
-Client = FrankfurterApiClient
+AsyncClient = AsyncFrankfurterClient

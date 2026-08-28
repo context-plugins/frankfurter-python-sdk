@@ -2,7 +2,7 @@
 
 **Raw** endpoints, reached through `with_raw_response`, return `ApiResult[T, E]` and never raise for an API error. For the parsed endpoints, see [API Reference](api-reference.md).
 
-> Source: [FrankfurterApiClient](frankfurter_api/client.py)
+> Source: [FrankfurterClient](frankfurter/client.py)
 
 <details>
 <summary><code>def get_currencies(*, scope: ScopeOrStr | None = None, providers: str | None = None, request_options: RequestOptionsOrDict | None = None) -> ApiResult[list[Currency], RawError]</code></summary>
@@ -57,9 +57,9 @@ match result:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| <code>scope</code> | <code>[ScopeOrStr](frankfurter_api/models/enums/scope.py) \| None</code> | Set to 'all' to include legacy currencies<br>**Default**: <code>None</code> |
+| <code>scope</code> | <code>[ScopeOrStr](frankfurter/models/enums/scope.py) \| None</code> | Set to 'all' to include legacy currencies<br>**Default**: <code>None</code> |
 | <code>providers</code> | <code>str \| None</code> | Comma-separated list of data providers to include<br>**Default**: <code>None</code> |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
 
 </dd>
 </dl>
@@ -69,11 +69,11 @@ match result:
 <dl>
 <dd>
 
-**Returns**: <code>[ApiResult](frankfurter_api/core/results.py)&#91;list&#91;[Currency](frankfurter_api/models/currency.py)&#93;, [RawError](frankfurter_api/core/results.py)&#93;</code>
+**Returns**: <code>[ApiResult](frankfurter/core/results.py)&#91;list&#91;[Currency](frankfurter/models/currency.py)&#93;, [RawError](frankfurter/core/results.py)&#93;</code>
 
-**On `Success`**: `payload` is <code>list&#91;[Currency](frankfurter_api/models/currency.py)&#93;</code> -- Available currencies
+**On `Success`**: `payload` is <code>list&#91;[Currency](frankfurter/models/currency.py)&#93;</code> -- Available currencies
 
-**On `Failure`**: `error` is <code>[RawError](frankfurter_api/core/results.py)</code>
+**On `Failure`**: `error` is <code>[RawError](frankfurter/core/results.py)</code>
 
 </dd>
 </dl>
@@ -137,7 +137,7 @@ match result:
 | Name | Type | Description |
 | --- | --- | --- |
 | <code>code</code> | <code>str</code> | Value sent with the request. |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
 
 </dd>
 </dl>
@@ -147,18 +147,18 @@ match result:
 <dl>
 <dd>
 
-**Returns**: <code>[ApiResult](frankfurter_api/core/results.py)&#91;[CurrencyDetail](frankfurter_api/models/currency_detail.py), [GetCurrencyErrorBody](frankfurter_api/errors/get_currency_error.py)&#93;</code>
+**Returns**: <code>[ApiResult](frankfurter/core/results.py)&#91;[CurrencyDetail](frankfurter/models/currency_detail.py), [GetCurrencyErrorBody](frankfurter/errors/get_currency_error.py)&#93;</code>
 
-**On `Success`**: `payload` is <code>[CurrencyDetail](frankfurter_api/models/currency_detail.py)</code> -- Currency details
+**On `Success`**: `payload` is <code>[CurrencyDetail](frankfurter/models/currency_detail.py)</code> -- Currency details
 
-**On `Failure`**: `error` is <code>[GetCurrencyErrorBody](frankfurter_api/errors/get_currency_error.py)</code>
+**On `Failure`**: `error` is <code>[GetCurrencyErrorBody](frankfurter/errors/get_currency_error.py)</code>
 
 Mapped in first-match order -- an earlier row wins over a later range that also covers the status:
 
 | Status | `error` is |
 | --- | --- |
-| 404 | <code>[NotFound1](frankfurter_api/models/not_found1.py)</code> |
-| anything unmapped | <code>[RawError](frankfurter_api/core/results.py)</code> |
+| 404 | <code>[NotFound1](frankfurter/models/not_found1.py)</code> |
+| anything unmapped | <code>[RawError](frankfurter/core/results.py)</code> |
 
 </dd>
 </dl>
@@ -221,7 +221,7 @@ match result:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
 
 </dd>
 </dl>
@@ -231,11 +231,11 @@ match result:
 <dl>
 <dd>
 
-**Returns**: <code>[ApiResult](frankfurter_api/core/results.py)&#91;list&#91;[Provider](frankfurter_api/models/provider.py)&#93;, [RawError](frankfurter_api/core/results.py)&#93;</code>
+**Returns**: <code>[ApiResult](frankfurter/core/results.py)&#91;list&#91;[Provider](frankfurter/models/provider.py)&#93;, [RawError](frankfurter/core/results.py)&#93;</code>
 
-**On `Success`**: `payload` is <code>list&#91;[Provider](frankfurter_api/models/provider.py)&#93;</code> -- Available providers
+**On `Success`**: `payload` is <code>list&#91;[Provider](frankfurter/models/provider.py)&#93;</code> -- Available providers
 
-**On `Failure`**: `error` is <code>[RawError](frankfurter_api/core/results.py)</code>
+**On `Failure`**: `error` is <code>[RawError](frankfurter/core/results.py)</code>
 
 </dd>
 </dl>
@@ -302,7 +302,7 @@ match result:
 | <code>quote</code> | <code>str</code> | Value sent with the request. |
 | <code>date</code> | <code>Date \| None</code> | Specific date (YYYY-MM-DD). Cannot be combined with from/to.<br>**Default**: <code>None</code> |
 | <code>providers</code> | <code>str \| None</code> | Comma-separated list of data providers to include<br>**Default**: <code>None</code> |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
 
 </dd>
 </dl>
@@ -312,20 +312,20 @@ match result:
 <dl>
 <dd>
 
-**Returns**: <code>[ApiResult](frankfurter_api/core/results.py)&#91;[Rate](frankfurter_api/models/rate.py), [GetRateErrorBody](frankfurter_api/errors/get_rate_error.py)&#93;</code>
+**Returns**: <code>[ApiResult](frankfurter/core/results.py)&#91;[Rate](frankfurter/models/rate.py), [GetRateErrorBody](frankfurter/errors/get_rate_error.py)&#93;</code>
 
-**On `Success`**: `payload` is <code>[Rate](frankfurter_api/models/rate.py)</code> -- Exchange rate
+**On `Success`**: `payload` is <code>[Rate](frankfurter/models/rate.py)</code> -- Exchange rate
 
-**On `Failure`**: `error` is <code>[GetRateErrorBody](frankfurter_api/errors/get_rate_error.py)</code>
+**On `Failure`**: `error` is <code>[GetRateErrorBody](frankfurter/errors/get_rate_error.py)</code>
 
 Mapped in first-match order -- an earlier row wins over a later range that also covers the status:
 
 | Status | `error` is |
 | --- | --- |
-| 404 | <code>[NotFound1](frankfurter_api/models/not_found1.py)</code> |
-| 422 | <code>[UnprocessableEntity1](frankfurter_api/models/unprocessable_entity1.py)</code> |
-| 503 | <code>[ServiceUnavailable1](frankfurter_api/models/service_unavailable1.py)</code> |
-| anything unmapped | <code>[RawError](frankfurter_api/core/results.py)</code> |
+| 404 | <code>[NotFound1](frankfurter/models/not_found1.py)</code> |
+| 422 | <code>[UnprocessableEntity1](frankfurter/models/unprocessable_entity1.py)</code> |
+| 503 | <code>[ServiceUnavailable1](frankfurter/models/service_unavailable1.py)</code> |
+| anything unmapped | <code>[RawError](frankfurter/core/results.py)</code> |
 
 </dd>
 </dl>
@@ -394,9 +394,9 @@ match result:
 | <code>base</code> | <code>str \| None</code> | Base currency (default: EUR)<br>**Default**: <code>"EUR"</code> |
 | <code>quotes</code> | <code>str \| None</code> | Comma-separated list of quote currencies to include<br>**Default**: <code>None</code> |
 | <code>providers</code> | <code>str \| None</code> | Comma-separated list of data providers to include<br>**Default**: <code>None</code> |
-| <code>group</code> | <code>[GroupOrStr](frankfurter_api/models/enums/group.py) \| None</code> | Downsample rates by time period. Only applies to date ranges.<br>**Default**: <code>None</code> |
-| <code>expand</code> | <code>[ExpandOrStr](frankfurter_api/models/enums/expand.py) \| None</code> | Comma-separated list of optional fields to include per record. Currently supports `providers`, which adds an array of `{ key, date, rate }` objects per record showing each provider's individual observation date and rate. Outliers excluded from the blend (and providers whose rate was overridden by a currency peg) are flagged with `excluded: true`. The field is omitted on synthesized peg rows where no provider published the quote. In CSV output, the `providers` column is encoded as `KEY:RATE` pairs joined by `\|`, with a trailing `*` on excluded entries (e.g. `ECB:0.92\|FED:1.50*`).<br>**Default**: <code>None</code> |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>group</code> | <code>[GroupOrStr](frankfurter/models/enums/group.py) \| None</code> | Downsample rates by time period. Only applies to date ranges.<br>**Default**: <code>None</code> |
+| <code>expand</code> | <code>[ExpandOrStr](frankfurter/models/enums/expand.py) \| None</code> | Comma-separated list of optional fields to include per record. Currently supports `providers`, which adds an array of `{ key, date, rate }` objects per record showing each provider's individual observation date and rate. Outliers excluded from the blend (and providers whose rate was overridden by a currency peg) are flagged with `excluded: true`. The field is omitted on synthesized peg rows where no provider published the quote. In CSV output, the `providers` column is encoded as `KEY:RATE` pairs joined by `\|`, with a trailing `*` on excluded entries (e.g. `ECB:0.92\|FED:1.50*`).<br>**Default**: <code>None</code> |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
 
 </dd>
 </dl>
@@ -406,20 +406,20 @@ match result:
 <dl>
 <dd>
 
-**Returns**: <code>[ApiResult](frankfurter_api/core/results.py)&#91;list&#91;[Rate](frankfurter_api/models/rate.py)&#93;, [GetRatesErrorBody](frankfurter_api/errors/get_rates_error.py)&#93;</code>
+**Returns**: <code>[ApiResult](frankfurter/core/results.py)&#91;list&#91;[Rate](frankfurter/models/rate.py)&#93;, [GetRatesErrorBody](frankfurter/errors/get_rates_error.py)&#93;</code>
 
-**On `Success`**: `payload` is <code>list&#91;[Rate](frankfurter_api/models/rate.py)&#93;</code> -- Exchange rates
+**On `Success`**: `payload` is <code>list&#91;[Rate](frankfurter/models/rate.py)&#93;</code> -- Exchange rates
 
-**On `Failure`**: `error` is <code>[GetRatesErrorBody](frankfurter_api/errors/get_rates_error.py)</code>
+**On `Failure`**: `error` is <code>[GetRatesErrorBody](frankfurter/errors/get_rates_error.py)</code>
 
 Mapped in first-match order -- an earlier row wins over a later range that also covers the status:
 
 | Status | `error` is |
 | --- | --- |
-| 404 | <code>[NotFound1](frankfurter_api/models/not_found1.py)</code> |
-| 422 | <code>[UnprocessableEntity1](frankfurter_api/models/unprocessable_entity1.py)</code> |
-| 503 | <code>[ServiceUnavailable1](frankfurter_api/models/service_unavailable1.py)</code> |
-| anything unmapped | <code>[RawError](frankfurter_api/core/results.py)</code> |
+| 404 | <code>[NotFound1](frankfurter/models/not_found1.py)</code> |
+| 422 | <code>[UnprocessableEntity1](frankfurter/models/unprocessable_entity1.py)</code> |
+| 503 | <code>[ServiceUnavailable1](frankfurter/models/service_unavailable1.py)</code> |
+| anything unmapped | <code>[RawError](frankfurter/core/results.py)</code> |
 
 </dd>
 </dl>

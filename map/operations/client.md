@@ -2,7 +2,7 @@
 
 # Client — operations
 
-Accessor: `client` · Source: `frankfurter_api/client.py` · 5 operations
+Accessor: `client` · Source: `frankfurter/client.py` · 5 operations
 
 Each `###` block is one operation and assumes `sdk-map.md` is loaded: blocks omit what its invariants table covers and are otherwise self-contained, so chunk at block level. Signatures are the sync parsed spelling; the async and raw spellings take the same parameters (see sdk-map.md). **Type sources** names the module declaring each type an operation mentions, so resolving a body, return or error payload is a lookup rather than a search; the runtime types `RawError` and `ApiResult` are excluded.
 
@@ -17,8 +17,8 @@ Each `###` block is one operation and assumes `sdk-map.md` is loaded: blocks omi
 
 | Type | Source |
 | --- | --- |
-| `ScopeOrStr` | `frankfurter_api/models/enums/scope.py` |
-| `Currency` | `frankfurter_api/models/currency.py` |
+| `ScopeOrStr` | `frankfurter/models/enums/scope.py` |
+| `Currency` | `frankfurter/models/currency.py` |
 
 ### client.get_currency
 
@@ -33,9 +33,9 @@ Each `###` block is one operation and assumes `sdk-map.md` is loaded: blocks omi
 
 | Type | Source |
 | --- | --- |
-| `CurrencyDetail` | `frankfurter_api/models/currency_detail.py` |
-| `GetCurrencyErrorBody` | `frankfurter_api/errors/get_currency_error.py` |
-| `NotFound1` | `frankfurter_api/models/not_found1.py` |
+| `CurrencyDetail` | `frankfurter/models/currency_detail.py` |
+| `GetCurrencyErrorBody` | `frankfurter/errors/get_currency_error.py` |
+| `NotFound1` | `frankfurter/models/not_found1.py` |
 
 ### client.get_providers
 
@@ -47,7 +47,7 @@ Each `###` block is one operation and assumes `sdk-map.md` is loaded: blocks omi
 
 | Type | Source |
 | --- | --- |
-| `Provider` | `frankfurter_api/models/provider.py` |
+| `Provider` | `frankfurter/models/provider.py` |
 
 ### client.get_rate
 
@@ -62,11 +62,11 @@ Each `###` block is one operation and assumes `sdk-map.md` is loaded: blocks omi
 
 | Type | Source |
 | --- | --- |
-| `Rate` | `frankfurter_api/models/rate.py` |
-| `GetRateErrorBody` | `frankfurter_api/errors/get_rate_error.py` |
-| `NotFound1` | `frankfurter_api/models/not_found1.py` |
-| `UnprocessableEntity1` | `frankfurter_api/models/unprocessable_entity1.py` |
-| `ServiceUnavailable1` | `frankfurter_api/models/service_unavailable1.py` |
+| `Rate` | `frankfurter/models/rate.py` |
+| `GetRateErrorBody` | `frankfurter/errors/get_rate_error.py` |
+| `NotFound1` | `frankfurter/models/not_found1.py` |
+| `UnprocessableEntity1` | `frankfurter/models/unprocessable_entity1.py` |
+| `ServiceUnavailable1` | `frankfurter/models/service_unavailable1.py` |
 
 ### client.get_rates
 
@@ -80,11 +80,11 @@ Each `###` block is one operation and assumes `sdk-map.md` is loaded: blocks omi
 
 | Type | Source |
 | --- | --- |
-| `GroupOrStr` | `frankfurter_api/models/enums/group.py` |
-| `ExpandOrStr` | `frankfurter_api/models/enums/expand.py` |
-| `Rate` | `frankfurter_api/models/rate.py` |
-| `GetRatesErrorBody` | `frankfurter_api/errors/get_rates_error.py` |
-| `NotFound1` | `frankfurter_api/models/not_found1.py` |
-| `UnprocessableEntity1` | `frankfurter_api/models/unprocessable_entity1.py` |
-| `ServiceUnavailable1` | `frankfurter_api/models/service_unavailable1.py` |
+| `GroupOrStr` | `frankfurter/models/enums/group.py` |
+| `ExpandOrStr` | `frankfurter/models/enums/expand.py` |
+| `Rate` | `frankfurter/models/rate.py` |
+| `GetRatesErrorBody` | `frankfurter/errors/get_rates_error.py` |
+| `NotFound1` | `frankfurter/models/not_found1.py` |
+| `UnprocessableEntity1` | `frankfurter/models/unprocessable_entity1.py` |
+| `ServiceUnavailable1` | `frankfurter/models/service_unavailable1.py` |
 

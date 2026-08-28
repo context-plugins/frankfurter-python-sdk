@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pydantic import AnyUrl
 from typing_extensions import NotRequired, TypedDict
 
 from ..core import UNSET, Date, OptionalNullable, SdkBaseModel
@@ -23,10 +22,10 @@ class Provider(SdkBaseModel):
     pivot_currency: OptionalNullable[str] = UNSET
     """Base currency for published rates"""
 
-    data_url: OptionalNullable[AnyUrl] = UNSET
+    data_url: OptionalNullable[str] = UNSET
     """Link to the data source"""
 
-    terms_url: OptionalNullable[AnyUrl] = UNSET
+    terms_url: OptionalNullable[str] = UNSET
     """Link to terms of use"""
 
     start_date: OptionalNullable[Date] = UNSET
@@ -55,8 +54,8 @@ class ProviderDict(TypedDict):
     country_code: NotRequired[str | None]
     rate_type: NotRequired[str | None]
     pivot_currency: NotRequired[str | None]
-    data_url: NotRequired[AnyUrl | None]
-    terms_url: NotRequired[AnyUrl | None]
+    data_url: NotRequired[str | None]
+    terms_url: NotRequired[str | None]
     start_date: NotRequired[Date | None]
     end_date: NotRequired[Date | None]
     publish_cadence: NotRequired[PublishCadenceOrStr | None]
