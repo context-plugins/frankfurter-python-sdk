@@ -112,6 +112,7 @@ from .raw_client import (
 )
 from .request_options import RequestOptions, RequestOptionsDict, RequestOptionsOrDict
 from .results import ApiResult, Failure, RawError, Success
+from .runtime_env import OPERATING_SYSTEM, PYTHON_RUNTIME
 from .servers import validate_one_of
 from .transport import (
     AsyncHttpClient,
@@ -237,6 +238,9 @@ __all__ = [
     "RawClientT",
     "BaseRawResponse",
     "SecuredRawResponse",
+    # Host environment reported in the SDK identification headers
+    "OPERATING_SYSTEM",
+    "PYTHON_RUNTIME",
     # Server layer
     "validate_one_of",
 ]

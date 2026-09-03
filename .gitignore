@@ -1,0 +1,27 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build / packaging artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Resolver lock file -- this is a library; consumers resolve their own versions
+uv.lock
+poetry.lock
+
+# Tool caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/

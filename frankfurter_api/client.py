@@ -5,8 +5,10 @@ from types import TracebackType
 
 from typing_extensions import Self
 
-from .base_client import DEFAULT_TIMEOUT, BaseFrankfurterClient
+from .base_client import DEFAULT_TIMEOUT, BaseFrankfurterApiClient
 from .core import (
+    OPERATING_SYSTEM,
+    PYTHON_RUNTIME,
     ApiResult,
     BaseRawResponse,
     Date,
@@ -32,7 +34,7 @@ from .models.rate import Rate
 from .server.server import Server
 
 
-class FrankfurterClient(BaseFrankfurterClient[RawClient]):
+class FrankfurterApiClient(BaseFrankfurterApiClient[RawClient]):
     def __init__(
         self,
         *,
@@ -42,7 +44,15 @@ class FrankfurterClient(BaseFrankfurterClient[RawClient]):
     ) -> None:
         super().__init__(base_url=base_url, timeout=timeout)
         self._raw_client = RawClient(
-            http_client=custom_http_client if custom_http_client is not None else HttpxClient(timeout=timeout)
+            http_client=custom_http_client if custom_http_client is not None else HttpxClient(timeout=timeout),
+            global_headers=[
+                param[str]("User-Agent", "FrankfurterApiClient/2.1.1 Python"),
+                param[str]("X-APIMatic-Lang", "Python"),
+                param[str]("X-APIMatic-Package-Version", "2.1.1"),
+                param[str]("X-APIMatic-Gen-Version", "4.0.0"),
+                param[str]("X-APIMatic-OS", OPERATING_SYSTEM),
+                param[str]("X-APIMatic-Runtime", PYTHON_RUNTIME),
+            ],
         )
 
     @cached_property
@@ -354,4 +364,4 @@ class ApiWithRawResponse(BaseRawResponse[RawClient, Server]):
         )
 
 
-Client = FrankfurterClient
+Client = FrankfurterApiClient

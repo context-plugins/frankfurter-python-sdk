@@ -1,8 +1,8 @@
-# Frankfurter SDK
+# Frankfurter API SDK
 
 [![Built with APIMatic][apimatic-badge]][apimatic-url] [![License: MIT][license-badge]][license-url] [![Python 3.10+][python-badge]][python-url]
 
-The Frankfurter SDK for Python provides access to the Frankfurter REST APIs from Python applications.
+The Frankfurter API SDK for Python provides access to the Frankfurter API REST APIs from Python applications.
 
 > [!TIP]
 > **Looking for a specific signature, model, enum, or error type?** This SDK ships a generated
@@ -18,15 +18,15 @@ Frankfurter is an open-source API for current and historical foreign exchange ra
 Install the Python SDK from PyPI, with whichever package manager your project uses:
 
 ```bash
-pip install frankfurter
+pip install frankfurter-api
 ```
 
 ```bash
-uv add frankfurter
+uv add frankfurter-api
 ```
 
 ```bash
-poetry add frankfurter
+poetry add frankfurter-api
 ```
 
 ---
@@ -35,36 +35,36 @@ poetry add frankfurter
 
 ### Synchronous client
 
-Construct `FrankfurterClient` with keyword arguments, and call `close()` when you are done. Every argument is optional; the full list is in the [SDK map](sdk-map.md).
+Construct `FrankfurterApiClient` with keyword arguments, and call `close()` when you are done. Every argument is optional; the full list is in the [SDK map](sdk-map.md).
 
 ```python
-from frankfurter import FrankfurterClient
+from frankfurter_api import FrankfurterApiClient
 
-client = FrankfurterClient()
+client = FrankfurterApiClient()
 
 # TODO: call endpoints here -- see api-reference.md
 
 client.close()
 ```
 
-Alternatively, scope it -- `with FrankfurterClient(...) as client:` closes the pool on exit; see [Best Practices](#best-practices).
+Alternatively, scope it -- `with FrankfurterApiClient(...) as client:` closes the pool on exit; see [Best Practices](#best-practices).
 
-`Client` is exported as an alias of `FrankfurterClient`, so `from frankfurter import Client` also works.
+`Client` is exported as an alias of `FrankfurterApiClient`, so `from frankfurter_api import Client` also works.
 
 The SDK accepts every model-typed input in two interchangeable spellings, both type-checked: the typed model, or a plain dict with the same keys -- the `OrDict` and `Model | ModelDict` unions in the [SDK map](sdk-map.md). Pick whichever suits the call site: the dict form needs no import, while the model form adds a keyword-checked constructor and editor completion.
 
 ### Asynchronous client
 
-`AsyncFrankfurterClient` mirrors `FrankfurterClient` with **identical method names**, and every endpoint method is a coroutine. It takes the same arguments, with some differences -- for example, the transport argument is `custom_async_http_client`.
+`AsyncFrankfurterApiClient` mirrors `FrankfurterApiClient` with **identical method names**, and every endpoint method is a coroutine. It takes the same arguments, with some differences -- for example, the transport argument is `custom_async_http_client`.
 
 ```python
 from asyncio import run
 
-from frankfurter import AsyncFrankfurterClient
+from frankfurter_api import AsyncFrankfurterApiClient
 
 
 async def main() -> None:
-    client = AsyncFrankfurterClient()
+    client = AsyncFrankfurterApiClient()
     # TODO: call endpoints here, awaiting each -- see api-reference.md
     await client.aclose()
 
@@ -72,7 +72,7 @@ async def main() -> None:
 run(main())
 ```
 
-Alternatively, scope it -- `async with AsyncFrankfurterClient(...) as client:` closes the pool on exit. Only the async spelling is `aclose`, matching httpx; see [Best Practices](#best-practices).
+Alternatively, scope it -- `async with AsyncFrankfurterApiClient(...) as client:` closes the pool on exit. Only the async spelling is `aclose`, matching httpx; see [Best Practices](#best-practices).
 
 `AsyncClient` is the exported alias. Each client accepts **only** its own transport argument; passing the other's is a `TypeError` at runtime and an error under mypy.
 
@@ -98,11 +98,11 @@ Consult the map before scanning or grepping the source: it answers call-level co
 ## Best Practices
 
 > [!TIP]
-> Use a **single `FrankfurterClient` instance** for the lifetime of your application and reuse it across
+> Use a **single `FrankfurterApiClient` instance** for the lifetime of your application and reuse it across
 > all requests. Each instance owns its own connection pool, so an instance per request forfeits
 > connection reuse and leaks pools that are never closed.
 
-Match the disposal to the client's lifetime: an application-lifetime client is closed once at shutdown with `close()` / `aclose()`; where the lifetime fits a block, `with FrankfurterClient() as client:` / `async with AsyncFrankfurterClient() as client:` releases it automatically. Both are idempotent, but a closed client is not reusable: the next call raises. The client closes **whatever transport it holds**, including one you supplied via `custom_http_client` / `custom_async_http_client`; if you intend to reuse your own transport across clients, don't hand its lifetime to a `with` block.
+Match the disposal to the client's lifetime: an application-lifetime client is closed once at shutdown with `close()` / `aclose()`; where the lifetime fits a block, `with FrankfurterApiClient() as client:` / `async with AsyncFrankfurterApiClient() as client:` releases it automatically. Both are idempotent, but a closed client is not reusable: the next call raises. The client closes **whatever transport it holds**, including one you supplied via `custom_http_client` / `custom_async_http_client`; if you intend to reuse your own transport across clients, don't hand its lifetime to a `with` block.
 
 ## License
 
