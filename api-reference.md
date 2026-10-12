@@ -29,7 +29,7 @@ Returns available currencies with their names and date ranges. By default, only 
 
 ```python
 try:
-    response = client.get_currencies()
+    response = client.get_currencies(providers="ECB,TCMB")
     # TODO: Handle 'response' of type list[Currency]
 except ApiError as e:
     ...  # TODO: Handle 'e.error' of type RawError
@@ -39,7 +39,7 @@ except ApiError as e:
 
 ```python
 try:
-    response = await async_client.get_currencies()
+    response = await async_client.get_currencies(providers="ECB,TCMB")
     # TODO: Handle 'response' of type list[Currency]
 except ApiError as e:
     ...  # TODO: Handle 'e.error' of type RawError
@@ -57,7 +57,7 @@ except ApiError as e:
 | --- | --- | --- |
 | <code>scope</code> | <code>[ScopeOrStr](frankfurter_api/models/enums/scope.py) \| None</code> | Set to 'all' to include legacy currencies<br>**Default**: <code>None</code> |
 | <code>providers</code> | <code>str \| None</code> | Comma-separated list of data providers to include<br>**Default**: <code>None</code> |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout, extra headers, or its retry count and statuses. |
 
 </dd>
 </dl>
@@ -104,7 +104,7 @@ Returns details for a single currency, including provider information or peg met
 
 ```python
 try:
-    response = client.get_currency(code)
+    response = client.get_currency("USD")
     # TODO: Handle 'response' of type CurrencyDetail
 except ApiError as e:
     ...  # TODO: Handle 'e.error' of type GetCurrencyErrorBody
@@ -114,7 +114,7 @@ except ApiError as e:
 
 ```python
 try:
-    response = await async_client.get_currency(code)
+    response = await async_client.get_currency("USD")
     # TODO: Handle 'response' of type CurrencyDetail
 except ApiError as e:
     ...  # TODO: Handle 'e.error' of type GetCurrencyErrorBody
@@ -131,7 +131,7 @@ except ApiError as e:
 | Name | Type | Description |
 | --- | --- | --- |
 | <code>code</code> | <code>str</code> | Value sent with the request. |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout, extra headers, or its retry count and statuses. |
 
 </dd>
 </dl>
@@ -211,7 +211,7 @@ except ApiError as e:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout, extra headers, or its retry count and statuses. |
 
 </dd>
 </dl>
@@ -258,7 +258,7 @@ Returns the blended exchange rate for a single currency pair. Without a date par
 
 ```python
 try:
-    response = client.get_rate(base, quote)
+    response = client.get_rate("EUR", "USD", date=date(2024, 1, 15), providers="ECB,TCMB")
     # TODO: Handle 'response' of type Rate
 except ApiError as e:
     ...  # TODO: Handle 'e.error' of type GetRateErrorBody
@@ -268,7 +268,7 @@ except ApiError as e:
 
 ```python
 try:
-    response = await async_client.get_rate(base, quote)
+    response = await async_client.get_rate("EUR", "USD", date=date(2024, 1, 15), providers="ECB,TCMB")
     # TODO: Handle 'response' of type Rate
 except ApiError as e:
     ...  # TODO: Handle 'e.error' of type GetRateErrorBody
@@ -288,7 +288,7 @@ except ApiError as e:
 | <code>quote</code> | <code>str</code> | Value sent with the request. |
 | <code>date</code> | <code>Date \| None</code> | Specific date (YYYY-MM-DD). Cannot be combined with from/to.<br>**Default**: <code>None</code> |
 | <code>providers</code> | <code>str \| None</code> | Comma-separated list of data providers to include<br>**Default**: <code>None</code> |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout, extra headers, or its retry count and statuses. |
 
 </dd>
 </dl>
@@ -344,7 +344,16 @@ Returns exchange rates blended across providers. Without date params, returns th
 
 ```python
 try:
-    response = client.get_rates()
+    response = client.get_rates(
+        date=date(2024, 1, 15),
+        from_=date(2024, 1, 1),
+        to=date(2024, 1, 31),
+        base="USD",
+        quotes="USD,GBP,JPY",
+        providers="ECB,TCMB",
+        group=Group.MONTH,
+        expand=Expand.PROVIDERS,
+    )
     # TODO: Handle 'response' of type list[Rate]
 except ApiError as e:
     ...  # TODO: Handle 'e.error' of type GetRatesErrorBody
@@ -354,7 +363,16 @@ except ApiError as e:
 
 ```python
 try:
-    response = await async_client.get_rates()
+    response = await async_client.get_rates(
+        date=date(2024, 1, 15),
+        from_=date(2024, 1, 1),
+        to=date(2024, 1, 31),
+        base="USD",
+        quotes="USD,GBP,JPY",
+        providers="ECB,TCMB",
+        group=Group.MONTH,
+        expand=Expand.PROVIDERS,
+    )
     # TODO: Handle 'response' of type list[Rate]
 except ApiError as e:
     ...  # TODO: Handle 'e.error' of type GetRatesErrorBody
@@ -378,7 +396,7 @@ except ApiError as e:
 | <code>providers</code> | <code>str \| None</code> | Comma-separated list of data providers to include<br>**Default**: <code>None</code> |
 | <code>group</code> | <code>[GroupOrStr](frankfurter_api/models/enums/group.py) \| None</code> | Downsample rates by time period. Only applies to date ranges.<br>**Default**: <code>None</code> |
 | <code>expand</code> | <code>[ExpandOrStr](frankfurter_api/models/enums/expand.py) \| None</code> | Comma-separated list of optional fields to include per record. Currently supports `providers`, which adds an array of `{ key, date, rate }` objects per record showing each provider's individual observation date and rate. Outliers excluded from the blend (and providers whose rate was overridden by a currency peg) are flagged with `excluded: true`. The field is omitted on synthesized peg rows where no provider published the quote. In CSV output, the `providers` column is encoded as `KEY:RATE` pairs joined by `\|`, with a trailing `*` on excluded entries (e.g. `ECB:0.92\|FED:1.50*`).<br>**Default**: <code>None</code> |
-| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout or extra headers. |
+| <code>request_options</code> | <code>[RequestOptionsOrDict](frankfurter_api/core/request_options.py) \| None</code> | Per-call overrides for this one request, such as a timeout, extra headers, or its retry count and statuses. |
 
 </dd>
 </dl>

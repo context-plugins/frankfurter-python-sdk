@@ -11,15 +11,17 @@ from .core import (
     PYTHON_RUNTIME,
     ApiResult,
     AsyncHttpClient,
-    AsyncHttpxClient,
+    AsyncHttpx2Client,
     AsyncRawClient,
     BaseRawResponse,
     Date,
     RawError,
     RequestOptionsOrDict,
-    json_decoder,
+    RetryOptionsOrDict,
+    async_json_decoder,
     param,
     raw_error_response,
+    unwrap,
 )
 from .errors.get_currency_error import GetCurrencyErrorBody, get_currency_error_mapper
 from .errors.get_rate_error import GetRateErrorBody, get_rate_error_mapper
@@ -40,13 +42,15 @@ class AsyncFrankfurterApiClient(BaseFrankfurterApiClient[AsyncRawClient]):
         *,
         base_url: str | None = None,
         timeout: float = DEFAULT_TIMEOUT,
+        retry_options: int | RetryOptionsOrDict | None = None,
         custom_async_http_client: AsyncHttpClient | None = None,
     ) -> None:
-        super().__init__(base_url=base_url, timeout=timeout)
+        super().__init__(base_url=base_url, timeout=timeout, retry_options=retry_options)
         self._raw_client = AsyncRawClient(
             http_client=(
-                custom_async_http_client if custom_async_http_client is not None else AsyncHttpxClient(timeout=timeout)
+                custom_async_http_client if custom_async_http_client is not None else AsyncHttpx2Client(timeout=timeout)
             ),
+            retry_options=self._retry_options,
             global_headers=[
                 param[str]("User-Agent", "FrankfurterApiClient/2.1.1 Python"),
                 param[str]("X-APIMatic-Lang", "Python"),
@@ -74,45 +78,48 @@ class AsyncFrankfurterApiClient(BaseFrankfurterApiClient[AsyncRawClient]):
         Args:
             scope: Set to 'all' to include legacy currencies
             providers: Comma-separated list of data providers to include
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             Available currencies
 
         Raises:
             ApiError: If the API responds with an error status code. ``error`` is ``RawError``."""
-        return (
+        return unwrap(
             await self.with_raw_response.get_currencies(
                 scope=scope, providers=providers, request_options=request_options
-            )
-        ).unwrap()
+            ),
+        )
 
     async def get_currency(self, code: str, *, request_options: RequestOptionsOrDict | None = None) -> CurrencyDetail:
         """Returns details for a single currency, including provider information or peg metadata.
 
         Args:
             code: Value sent with the request.
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             Currency details
 
         Raises:
             ApiError: No data found ``error`` is ``NotFound1 | RawError``."""
-        return (await self.with_raw_response.get_currency(code, request_options=request_options)).unwrap()
+        return unwrap(await self.with_raw_response.get_currency(code, request_options=request_options))
 
     async def get_providers(self, *, request_options: RequestOptionsOrDict | None = None) -> list[Provider]:
         """Returns available exchange rate data providers with their base currency.
 
         Args:
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             Available providers
 
         Raises:
             ApiError: If the API responds with an error status code. ``error`` is ``RawError``."""
-        return (await self.with_raw_response.get_providers(request_options=request_options)).unwrap()
+        return unwrap(await self.with_raw_response.get_providers(request_options=request_options))
 
     async def get_rate(
         self,
@@ -131,7 +138,8 @@ class AsyncFrankfurterApiClient(BaseFrankfurterApiClient[AsyncRawClient]):
             quote: Value sent with the request.
             date: Specific date (YYYY-MM-DD). Cannot be combined with from/to.
             providers: Comma-separated list of data providers to include
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             Exchange rate
@@ -140,11 +148,11 @@ class AsyncFrankfurterApiClient(BaseFrankfurterApiClient[AsyncRawClient]):
             ApiError: Invalid request No data found The request deadline expired before the response could be computed.
                 Retry with a narrower request: filter with quotes, aggregate with group, or split the range into shorter
                 requests. ``error`` is ``NotFound1 | UnprocessableEntity1 | ServiceUnavailable1 | RawError``."""
-        return (
+        return unwrap(
             await self.with_raw_response.get_rate(
                 base, quote, date=date, providers=providers, request_options=request_options
-            )
-        ).unwrap()
+            ),
+        )
 
     async def get_rates(
         self,
@@ -182,7 +190,8 @@ class AsyncFrankfurterApiClient(BaseFrankfurterApiClient[AsyncRawClient]):
                 a currency peg) are flagged with ``excluded: true``. The field is omitted on synthesized peg rows where
                 no provider published the quote. In CSV output, the ``providers`` column is encoded as ``KEY:RATE``
                 pairs joined by ``|``, with a trailing ``*`` on excluded entries (e.g. ``ECB:0.92|FED:1.50*``).
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             Exchange rates
@@ -191,7 +200,7 @@ class AsyncFrankfurterApiClient(BaseFrankfurterApiClient[AsyncRawClient]):
             ApiError: Invalid request No data found The request deadline expired before the response could be computed.
                 Retry with a narrower request: filter with quotes, aggregate with group, or split the range into shorter
                 requests. ``error`` is ``NotFound1 | UnprocessableEntity1 | ServiceUnavailable1 | RawError``."""
-        return (
+        return unwrap(
             await self.with_raw_response.get_rates(
                 date=date,
                 from_=from_,
@@ -202,8 +211,8 @@ class AsyncFrankfurterApiClient(BaseFrankfurterApiClient[AsyncRawClient]):
                 group=group,
                 expand=expand,
                 request_options=request_options,
-            )
-        ).unwrap()
+            ),
+        )
 
     async def aclose(self) -> None:
         await self._raw_client.http_client.aclose()
@@ -231,7 +240,8 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
         Args:
             scope: Set to 'all' to include legacy currencies
             providers: Comma-separated list of data providers to include
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
@@ -239,7 +249,7 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
             http_method="GET",
             url_template=self._server.default("/currencies"),
             query_params=[param[ScopeOrStr | None]("scope", scope), param[str | None]("providers", providers)],
-            decoder=json_decoder[list[Currency]],
+            decoder=async_json_decoder[list[Currency]],
             error_mapper=raw_error_response,
             request_options=request_options,
         )
@@ -251,7 +261,8 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
 
         Args:
             code: Value sent with the request.
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
@@ -259,7 +270,7 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
             http_method="GET",
             url_template=self._server.default("/currency/{code}"),
             path_params=[param[str]("code", code)],
-            decoder=json_decoder[CurrencyDetail],
+            decoder=async_json_decoder[CurrencyDetail],
             error_mapper=get_currency_error_mapper,
             request_options=request_options,
         )
@@ -270,14 +281,15 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
         """Returns available exchange rate data providers with their base currency.
 
         Args:
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
         return await self._client.execute(
             http_method="GET",
             url_template=self._server.default("/providers"),
-            decoder=json_decoder[list[Provider]],
+            decoder=async_json_decoder[list[Provider]],
             error_mapper=raw_error_response,
             request_options=request_options,
         )
@@ -299,7 +311,8 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
             quote: Value sent with the request.
             date: Specific date (YYYY-MM-DD). Cannot be combined with from/to.
             providers: Comma-separated list of data providers to include
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
@@ -308,7 +321,7 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
             url_template=self._server.default("/rate/{base}/{quote}"),
             path_params=[param[str]("base", base), param[str]("quote", quote)],
             query_params=[param[Date | None]("date", date), param[str | None]("providers", providers)],
-            decoder=json_decoder[Rate],
+            decoder=async_json_decoder[Rate],
             error_mapper=get_rate_error_mapper,
             request_options=request_options,
         )
@@ -349,7 +362,8 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
                 a currency peg) are flagged with ``excluded: true``. The field is omitted on synthesized peg rows where
                 no provider published the quote. In CSV output, the ``providers`` column is encoded as ``KEY:RATE``
                 pairs joined by ``|``, with a trailing ``*`` on excluded entries (e.g. ``ECB:0.92|FED:1.50*``).
-            request_options: Per-call overrides for this one request, such as a timeout or extra headers.
+            request_options: Per-call overrides for this one request, such as a timeout, extra headers, or its retry
+                count and statuses.
 
         Returns:
             An ``ApiResult`` holding the deserialized response or the error body."""
@@ -366,7 +380,7 @@ class AsyncApiWithRawResponse(BaseRawResponse[AsyncRawClient, Server]):
                 param[GroupOrStr | None]("group", group),
                 param[ExpandOrStr | None]("expand", expand),
             ],
-            decoder=json_decoder[list[Rate]],
+            decoder=async_json_decoder[list[Rate]],
             error_mapper=get_rates_error_mapper,
             request_options=request_options,
         )

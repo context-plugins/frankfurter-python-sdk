@@ -10,22 +10,33 @@ with ``match`` or ``isinstance`` and the payload or error comes with it:
         case Failure(error=err):
             ...
 
-Both variants are frozen dataclasses, so pattern matching needs nothing added. ``.unwrap()`` is the
-shortcut for callers that would rather not branch -- it returns the payload or raises.
+Both variants are frozen dataclasses, so pattern matching needs nothing added. To skip the branch,
+call ``unwrap(result)``: it returns the payload or raises ``ApiError``. It is a function, not a method, so
+the same name also covers paginators: ``unwrap(paginator, items_selector)`` returns a paginator of payloads.
+
+Each carries the response's **head** -- its status and headers -- as fields of its own rather than a
+response object. There is no body beside them: the body *is* the payload on a success, and on a
+failure it is the error, reachable through :class:`RawError` where the operation documents no schema
+for it. A no-content operation therefore cannot show a caller the body it discarded; reaching one
+deliberately is future work, and an empty ``content`` on a response object was the wrong way to
+advertise its absence.
 
 :class:`RawError` lives here too: it is the error type a :class:`Failure` carries when the operation
 does not document the status that came back."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Generic, NoReturn, TypeAlias, TypeVar
+from collections.abc import AsyncIterator, Callable, Iterator, Mapping, Sequence
+from dataclasses import dataclass, field
+from typing import Any, Generic, NoReturn, TypeAlias, TypeVar, overload
 
+from ._internal.wire import parse_json
 from .exceptions import ApiError
-from .transport import HttpResponse
+from .paginator import AsyncPaginator, Paginator
 
 T = TypeVar("T")
 E = TypeVar("E")
+ItemT = TypeVar("ItemT")
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,14 +44,13 @@ class Success(Generic[T]):
     """A successful (2xx) API call carrying the decoded ``payload``."""
 
     payload: T
-    response: HttpResponse
+    status_code: int
+    headers: Mapping[str, str] = field(repr=False)
+    """Header names lowercased, per the transports' obligation -- look keys up in lowercase.
 
-    def unwrap(self) -> T:
-        """Collapse this result to its parsed value.
-
-        Returns:
-            The decoded payload. This variant never raises."""
-        return self.payload
+    Kept out of the generated repr: a response's headers carry ``set-cookie``, so a result printed
+    in a log line or a debugger pane would otherwise hand over a session secret. The status stays,
+    because identifying the result is the whole job of the string form (ADR-0017)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,18 +61,17 @@ class Failure(Generic[E]):
     documented schemas, or :class:`RawError` for an unmapped status) -- not a wrapper."""
 
     error: E
-    response: HttpResponse
+    status_code: int
+    headers: Mapping[str, str] = field(repr=False)
+    """Header names lowercased, per the transports' obligation -- look keys up in lowercase.
 
-    def unwrap(self) -> NoReturn:
-        """Collapse this result to its parsed value, which for a failure means raising.
-
-        Raises:
-            ApiError: Always, carrying this result's ``error`` and ``response``."""
-        raise ApiError(error=self.error, response=self.response)
+    Kept out of the generated repr: a response's headers carry ``set-cookie``, so a result printed
+    in a log line or a debugger pane would otherwise hand over a session secret. The status stays,
+    because identifying the result is the whole job of the string form (ADR-0017)."""
 
 
-# One call yields exactly one of these; narrow with ``match`` or ``isinstance``,
-# or collapse to the parsed value with ``.unwrap()``.
+# One call returns exactly one of these. Narrow with ``match`` or ``isinstance``,
+# or get the payload with ``unwrap(result)``.
 ApiResult: TypeAlias = Success[T] | Failure[E]
 
 
@@ -70,18 +79,12 @@ ApiResult: TypeAlias = Success[T] | Failure[E]
 class RawError:
     """Undecoded fallback body (unmapped status / no declared schema).
 
-    Wraps the raw response so the status and bytes are available and decoded on
-    demand. Constructed directly -- ``RawError(response)``."""
+    Holds the status and the bytes themselves rather than a response, so the one object that *is*
+    the error carries everything it needs to describe itself. Decoded on demand --
+    ``RawError(status_code, content)``."""
 
-    response: HttpResponse
-
-    @property
-    def status_code(self) -> int:
-        return self.response.status_code
-
-    @property
-    def content(self) -> bytes:
-        return self.response.content
+    status_code: int
+    content: bytes
 
     def text(self, encoding: str = "utf-8") -> str:
         """Decode the undecoded body as text, for a log line or a diagnostic.
@@ -91,7 +94,7 @@ class RawError:
 
         Returns:
             The body as text, undecodable bytes replaced rather than raising."""
-        return self.response.text(encoding)
+        return self.content.decode(encoding, errors="replace")
 
     def json(self) -> Any:
         """Parse the undecoded body as JSON.
@@ -101,10 +104,75 @@ class RawError:
 
         Raises:
             ValueError: If the body is not valid JSON."""
-        return self.response.json()
+        return parse_json(self.content)
 
     def __repr__(self) -> str:
-        # Identify the response by status only -- the (undecoded, possibly large,
-        # binary, or sensitive) body and the headers/request are deliberately kept
-        # out of the string form. Read the body on demand via ``text``/``json``.
+        # Identify by status only -- the (undecoded, possibly large, binary, or sensitive) body is
+        # deliberately kept out of the string form. Read it on demand via ``text``/``json``.
         return f"{type(self).__name__}(status_code={self.status_code})"
+
+
+@overload
+def unwrap(result: Failure[E], /) -> NoReturn: ...
+
+
+@overload
+def unwrap(result: ApiResult[T, E], /) -> T: ...
+
+
+@overload
+def unwrap(
+    paginator: Paginator[ApiResult[T, E], ItemT], items_selector: Callable[[T], Sequence[ItemT]], /
+) -> Paginator[T, ItemT]: ...
+
+
+@overload
+def unwrap(
+    paginator: AsyncPaginator[ApiResult[T, E], ItemT], items_selector: Callable[[T], Sequence[ItemT]], /
+) -> AsyncPaginator[T, ItemT]: ...
+
+
+def unwrap(
+    value: ApiResult[T, E] | Paginator[ApiResult[T, E], ItemT] | AsyncPaginator[ApiResult[T, E], ItemT],
+    items_selector: Callable[[T], Sequence[ItemT]] | None = None,
+    /,
+) -> T | Paginator[T, ItemT] | AsyncPaginator[T, ItemT]:
+    """Return the parsed form of a raw value: a result's payload, or a paginator over payloads.
+
+    A ``Success`` returns its payload and a ``Failure`` raises. A paginator of ``ApiResult`` pages returns a
+    paginator of the same flavour over the payloads: earlier pages arrive, and the first failed page raises.
+    The raw paginator's own item selector is not used.
+
+    Args:
+        value: A result, or a paginator whose pages are results.
+        items_selector: Returns one payload's items, in order. Required with a paginator; omit it with a result.
+
+    Returns:
+        The payload, or a lazy paginator over payloads that can be iterated more than once.
+
+    Raises:
+        ApiError: For a ``Failure``, carrying its ``error`` and response head. For a paginator, raised while
+            iterating, at the first failed page.
+        TypeError: If the value is neither a result nor a paginator, or a paginator arrives without ``items_selector``.
+            The overloads reject both statically."""
+    match value, items_selector:
+        case Success(payload=payload), _:
+            return payload
+        case Failure(error=error, status_code=status_code, headers=headers), _:
+            raise ApiError(error=error, status_code=status_code, headers=headers)
+        case Paginator(), items if items is not None:
+
+            def fetch_pages() -> Iterator[T]:
+                for result in value.iter_pages():
+                    yield unwrap(result)
+
+            return Paginator(fetch_pages, items)
+        case AsyncPaginator(), items if items is not None:
+
+            async def async_fetch_pages() -> AsyncIterator[T]:
+                async for result in value.iter_pages():
+                    yield unwrap(result)
+
+            return AsyncPaginator(async_fetch_pages, items)
+        case _:
+            raise TypeError("the value cannot be unwrapped")

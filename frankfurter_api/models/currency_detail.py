@@ -32,4 +32,4 @@ class CurrencyDetailDict(TypedDict):
     name: str
     symbol: NotRequired[str | None]
     providers: NotRequired[list[str]]
-    peg: NotRequired[Peg | PegDict]
+    peg: NotRequired[PegDict]

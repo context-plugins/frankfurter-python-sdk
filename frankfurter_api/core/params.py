@@ -12,11 +12,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
+from typing import Any, Final, Generic, TypeVar
 
 from pydantic import TypeAdapter
 from typing_extensions import TypeForm
 
+from ._internal.subscripts import SubscriptOnly
 from .adapters import adapter_for, validation_target
 
 T = TypeVar("T")
@@ -108,7 +109,7 @@ class _DeclaredParam(Generic[T]):
         return Param(key, value, self.adapter, serialization_format)
 
 
-class _ParamFactory:
+class _ParamFactory(SubscriptOnly):
     """``param[T](key, value)`` -- name a parameter's declared type in the subscript.
 
     Subscripted for the reason ``json_body`` documents in full: ``T`` is solved from the
@@ -116,8 +117,8 @@ class _ParamFactory:
     employee)`` is a build failure where a one-call ``param("array", employee, bool)`` would
     have inference absorb the disagreement. And because the factory declares no ``__call__``,
     *omitting* the declared type is a build failure too: ``param("array", True)`` is rejected
-    statically (``[operator]``); the runtime ``__call__`` below is invisible to type checkers
-    and exists only to turn that same mistake into a guided ``TypeError``.
+    statically (``[operator]``); the runtime ``__call__`` inherited from :class:`SubscriptOnly` is
+    invisible to type checkers and exists only to turn that same mistake into a guided ``TypeError``.
 
     The subscript is a ``TypeForm``, exactly as in ``json_body[...]``, so a runtime union alias
     (``Person``, which is ``Employee | Boss``) binds ``T`` as precisely as a concrete class
@@ -125,16 +126,11 @@ class _ParamFactory:
     ``param[Person | PersonDict]`` -- and :func:`validation_target` keeps the companion out of
     the adapter."""
 
+    factory_name = "param"
+    spelling = 'param[T](key, value), e.g. param[bool]("array", True)'
+
     def __getitem__(self, declared: TypeForm[T]) -> _DeclaredParam[T]:
         return _DeclaredParam(adapter_for(validation_target(declared)))
-
-    if not TYPE_CHECKING:
-
-        def __call__(self, *args, **kwargs):
-            raise TypeError(
-                "param is not called directly -- name the declared type in its subscript: "
-                'param[T](key, value), e.g. param[bool]("array", True)'
-            )
 
 
 param: Final = _ParamFactory()

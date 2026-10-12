@@ -23,11 +23,10 @@ from pydantic import BaseModel, ConfigDict, Field
 # below needs one at the 3.10 floor.
 from typing_extensions import TypeVar
 
-from .._internal.wire import text_values
+from .._internal.wire import parse_json, text_values
 from ..decoding import ErrorMapper
 from ..params import Param, param
 from ..results import RawError
-from ..transport import HttpResponse
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,11 +141,11 @@ class OAuthErrorResponse:
     every provider. A response that does not conform becomes a :class:`RawError` rather than raising
     out of the mapper, because a failed fetch must surface the provider's answer, not a parse error."""
 
-    def map(self, response: HttpResponse) -> OAuthError:
+    def map(self, status_code: int, content: bytes) -> OAuthError:
         try:
-            return OAuthProviderError.model_validate(response.json())
+            return OAuthProviderError.model_validate(parse_json(content))
         except ValueError:
-            return RawError(response)
+            return RawError(status_code, content)
 
 
 oauth_error_response: Final[ErrorMapper[OAuthError]] = OAuthErrorResponse()

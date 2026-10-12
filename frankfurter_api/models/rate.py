@@ -31,4 +31,4 @@ class RateDict(TypedDict):
     base: str
     quote: str
     rate: float
-    providers: NotRequired[list[Provider2 | Provider2Dict]]
+    providers: NotRequired[list[Provider2Dict]]

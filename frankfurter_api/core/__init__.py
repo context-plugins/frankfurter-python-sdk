@@ -13,6 +13,7 @@ path for the unit tests that target it.
 
 Everything remains importable from its fully-qualified module path as well."""
 
+from ._internal.headers import find_link_target, read_header
 from .auth import (
     AllSchemes,
     AnySchemes,
@@ -75,15 +76,45 @@ from .auth.schemes import (
 )
 from .base_raw_response import BaseRawResponse, SecuredRawResponse
 from .bodies import (
+    BinaryBody,
     FormBody,
     JsonBody,
     MultipartBody,
+    MultipartFile,
+    MultipartPart,
+    MultipartText,
     RequestBody,
+    TextBody,
+    binary_body,
+    file_part,
     form_body,
     json_body,
+    json_part,
     multipart_body,
+    text_body,
 )
 from .converters import (
+    Base16AsciiEncodedBytes,
+    Base16Cp1252EncodedBytes,
+    Base16Latin1EncodedBytes,
+    Base16Utf8EncodedBytes,
+    Base32AsciiEncodedBytes,
+    Base32Cp1252EncodedBytes,
+    Base32HexAsciiEncodedBytes,
+    Base32HexCp1252EncodedBytes,
+    Base32HexLatin1EncodedBytes,
+    Base32HexUtf8EncodedBytes,
+    Base32Latin1EncodedBytes,
+    Base32Utf8EncodedBytes,
+    Base64AsciiEncodedBytes,
+    Base64Cp1252EncodedBytes,
+    Base64Latin1EncodedBytes,
+    Base64UrlAsciiEncodedBytes,
+    Base64UrlCp1252EncodedBytes,
+    Base64UrlLatin1EncodedBytes,
+    Base64UrlUtf8EncodedBytes,
+    Base64Utf8EncodedBytes,
+    ByteField,
     Date,
     RFC1123DateTime,
     RFC3339DateTime,
@@ -91,19 +122,51 @@ from .converters import (
     open_enum_validator,
 )
 from .decoding import (
+    AsyncResponseDecoder,
     ErrorMapper,
     ResponseDecoder,
+    async_empty_response,
+    async_file_decoder,
+    async_json_decoder,
+    async_json_event_decoder,
+    async_text_decoder,
+    async_text_event_decoder,
     decode_json,
     decode_text,
     empty_response,
+    file_decoder,
     json_decoder,
+    json_event_decoder,
     raw_error_response,
     text_decoder,
+    text_event_decoder,
 )
-from .exceptions import ApiError
-from .httpx_transport import AsyncHttpxClient, HttpxClient
+from .discriminators import WireDiscriminator
+from .event_streams import AsyncEventStream, EventStream
+from .exceptions import ApiError, TransportError
+from .file_responses import AsyncFileResponse, FileResponse
+from .files import (
+    AsyncBinaryContent,
+    AsyncBinaryReader,
+    AsyncFileInput,
+    BinaryContent,
+    BinaryReader,
+    FileInput,
+    NamedFile,
+)
+from .httpx2_transport import AsyncHttpx2Client, Httpx2Client
 from .models import SdkBaseModel
 from .optionality import UNSET, Optional, OptionalNullable, UnsetType
+from .pagination import (
+    async_paginate,
+    cursor_state,
+    keyset_state,
+    link_state,
+    offset_state,
+    page_state,
+    paginate,
+)
+from .paginator import AsyncPaginator, Paginator
 from .params import SerializationFormat, UrlTemplate, param
 from .raw_client import (
     AsyncRawClient,
@@ -111,12 +174,15 @@ from .raw_client import (
     RawClientT,
 )
 from .request_options import RequestOptions, RequestOptionsDict, RequestOptionsOrDict
-from .results import ApiResult, Failure, RawError, Success
+from .results import ApiResult, Failure, RawError, Success, unwrap
+from .retries import RetryOptions, RetryOptionsDict, RetryOptionsOrDict
 from .runtime_env import OPERATING_SYSTEM, PYTHON_RUNTIME
 from .servers import validate_one_of
 from .transport import (
     AsyncHttpClient,
+    AsyncHttpResponse,
     HttpClient,
+    HttpMethod,
     HttpRequest,
     HttpResponse,
 )
@@ -126,15 +192,19 @@ __all__ = [
     "ApiResult",
     "Success",
     "Failure",
+    "unwrap",
     "RawError",
     "ApiError",
+    "TransportError",
     # HTTP transport
     "HttpClient",
     "AsyncHttpClient",
+    "HttpMethod",
     "HttpRequest",
     "HttpResponse",
-    "HttpxClient",
-    "AsyncHttpxClient",
+    "AsyncHttpResponse",
+    "Httpx2Client",
+    "AsyncHttpx2Client",
     # Request parameters and bodies
     "param",
     "SerializationFormat",
@@ -146,10 +216,36 @@ __all__ = [
     "form_body",
     "MultipartBody",
     "multipart_body",
+    "MultipartPart",
+    "MultipartText",
+    "MultipartFile",
+    "file_part",
+    "json_part",
+    "BinaryBody",
+    "binary_body",
+    "TextBody",
+    "text_body",
+    # File input
+    "BinaryReader",
+    "AsyncBinaryReader",
+    "BinaryContent",
+    "AsyncBinaryContent",
+    "NamedFile",
+    "FileInput",
+    "AsyncFileInput",
+    # Streamed payloads
+    "FileResponse",
+    "AsyncFileResponse",
+    "EventStream",
+    "AsyncEventStream",
     # Per-call request options
     "RequestOptions",
     "RequestOptionsDict",
     "RequestOptionsOrDict",
+    # Retries
+    "RetryOptions",
+    "RetryOptionsDict",
+    "RetryOptionsOrDict",
     # Authentication
     "AuthParams",
     "AuthScheme",
@@ -213,24 +309,60 @@ __all__ = [
     "AsyncAuthorizationCodeTokenSource",
     # Response decoding and error mapping
     "ResponseDecoder",
+    "AsyncResponseDecoder",
     "ErrorMapper",
     "json_decoder",
+    "async_json_decoder",
     "text_decoder",
+    "async_text_decoder",
     "decode_json",
     "decode_text",
     "empty_response",
+    "async_empty_response",
     "raw_error_response",
+    "file_decoder",
+    "async_file_decoder",
+    "json_event_decoder",
+    "text_event_decoder",
+    "async_json_event_decoder",
+    "async_text_event_decoder",
     # Model base and optionality
     "SdkBaseModel",
     "UNSET",
     "UnsetType",
     "Optional",
     "OptionalNullable",
-    # Date/time and enum converters
+    # Union discrimination
+    "WireDiscriminator",
+    # Wire-format converters
     "Date",
     "RFC3339DateTime",
     "RFC1123DateTime",
     "UnixSecondsDateTime",
+    # Wire-format binary aliases -- one per (RFC 4648 alphabet, charset) pair
+    "Base64AsciiEncodedBytes",
+    "Base64Utf8EncodedBytes",
+    "Base64Latin1EncodedBytes",
+    "Base64Cp1252EncodedBytes",
+    "Base64UrlAsciiEncodedBytes",
+    "Base64UrlUtf8EncodedBytes",
+    "Base64UrlLatin1EncodedBytes",
+    "Base64UrlCp1252EncodedBytes",
+    "Base32AsciiEncodedBytes",
+    "Base32Utf8EncodedBytes",
+    "Base32Latin1EncodedBytes",
+    "Base32Cp1252EncodedBytes",
+    "Base32HexAsciiEncodedBytes",
+    "Base32HexUtf8EncodedBytes",
+    "Base32HexLatin1EncodedBytes",
+    "Base32HexCp1252EncodedBytes",
+    "Base16AsciiEncodedBytes",
+    "Base16Utf8EncodedBytes",
+    "Base16Latin1EncodedBytes",
+    "Base16Cp1252EncodedBytes",
+    # Binary property declaration
+    "ByteField",
+    # Open enums
     "open_enum_validator",
     # Raw clients and the raw-response base
     "RawClient",
@@ -243,4 +375,16 @@ __all__ = [
     "PYTHON_RUNTIME",
     # Server layer
     "validate_one_of",
+    # Pagination
+    "Paginator",
+    "AsyncPaginator",
+    "paginate",
+    "async_paginate",
+    "offset_state",
+    "page_state",
+    "cursor_state",
+    "keyset_state",
+    "link_state",
+    "read_header",
+    "find_link_target",
 ]

@@ -96,8 +96,8 @@ def _strip_companions(type_: TypeForm[Any]) -> TypeForm[Any]:
 
     - the origin checks, because ``get_args(list[str])`` is ``(str,)`` -- descending is only sound
       for the origins whose parameters *are* element types, so everything else is returned
-      untouched. Notably ``Annotated``, which is how ``Person`` carries its
-      ``Field(discriminator=...)``: descending would silently untag a discriminated union.
+      untouched. Notably ``Annotated``, which is how a discriminated union carries its
+      ``WireDiscriminator``: descending would silently untag it.
       ``_CONTAINERS`` is closed at ``list`` and ``dict`` rather than "every container Python has" --
       a spec expresses arrays and maps, and descending a shape no generator emits would be
       speculative surface. A ``tuple`` or ``set`` parameter passes through like any other origin;

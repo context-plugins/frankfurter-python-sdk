@@ -136,6 +136,31 @@ def to_text(value: object) -> str:
     return str(value)
 
 
+def parse_json(content: bytes) -> Any:
+    """Parse a response body as JSON, normalising both ways it can fail.
+
+    Parsed from the bytes rather than from a decoded ``str``, so RFC 8259 encoding detection applies
+    (UTF-8/16/32, BOM-tolerant) and an undecodable byte is a failure rather than a replacement
+    character smuggled into a successful payload.
+
+    ``json.JSONDecodeError`` and ``UnicodeDecodeError`` are both ``ValueError``s already, but they
+    read as two unrelated faults; a caller who reached a body that will not parse is owed one answer.
+    The inverse of :func:`compact_json`, and here for the same reason -- one spelling, every caller.
+
+    Args:
+        content: The raw body.
+
+    Returns:
+        Whatever the body parses to -- an object, array or scalar.
+
+    Raises:
+        ValueError: If the body is not valid JSON, or is not decodable at all."""
+    try:
+        return json.loads(content)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError("Response body is not valid JSON") from exc
+
+
 def compact_json(value: object) -> str:
     """JSON-encode a structured value with no insignificant whitespace.
 

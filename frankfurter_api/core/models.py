@@ -77,9 +77,9 @@ class SdkBaseModel(BaseModel):
                 contract; pass ``False`` for Python-name keys.
             exclude_unset: Omit fields that were never explicitly set, narrowing the
                 output to what the server actually sent. **Opt-in, not the default**:
-                every discriminated-union variant carries a *defaulted* discriminator,
-                so on a locally constructed model this drops the tag and the result no
-                longer validates against the union alias.
+                a variant that pins its tag in its own schema carries it as a
+                *defaulted* field, so on a locally constructed model this drops the tag
+                and the result no longer validates against the union alias.
             exclude_defaults: Omit fields still holding their default value.
             exclude_none: Omit fields whose value is ``None``. The round-trip-safe way
                 to suppress nulls -- it keeps defaulted discriminators.

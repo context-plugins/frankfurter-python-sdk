@@ -23,10 +23,10 @@ from typing_extensions import NotRequired, Self, TypedDict
 
 from ..._internal.urls import build_url
 from ...bodies import form_body
-from ...decoding import json_decoder
+from ...decoding import async_json_decoder, json_decoder
 from ...params import UrlTemplate, param
 from ...raw_client import AsyncRawClient, RawClient
-from ...results import Success
+from ...results import Success, unwrap
 from ..models import (
     CredentialsPlacement,
     OAuth2Credentials,
@@ -285,22 +285,22 @@ class AuthorizationCodeTokenSource(Generic[ScopeT]):
             build_url(self.authorization_url, query_params=_authorization_params(credentials, pkce))
         )
         headers, client_params = self.placement(credentials.client_id, credentials.client_secret)
-        return self.client.execute(
-            http_method="POST",
-            url_template=self.token_url,
-            headers=headers,
-            body=form_body(
-                (
+        return unwrap(
+            self.client.execute(
+                http_method="POST",
+                url_template=self.token_url,
+                headers=headers,
+                body=form_body(
                     param[str]("grant_type", "authorization_code"),
                     param[str]("code", code),
                     param[str]("redirect_uri", credentials.redirect_uri),
                     *_code_verifier_params(pkce),
                     *client_params,
-                )
-            ),
-            decoder=json_decoder[OAuthTokenRefreshable],
-            error_mapper=oauth_error_response,
-        ).unwrap()
+                ),
+                decoder=json_decoder[OAuthTokenRefreshable],
+                error_mapper=oauth_error_response,
+            )
+        )
 
     def refresh(
         self, credentials: AuthorizationCodeCredentials[ScopeT], refresh_token: str
@@ -323,11 +323,9 @@ class AuthorizationCodeTokenSource(Generic[ScopeT]):
             url_template=self.refresh_url,
             headers=headers,
             body=form_body(
-                (
-                    param[str]("grant_type", "refresh_token"),
-                    param[str]("refresh_token", refresh_token),
-                    *client_params,
-                )
+                param[str]("grant_type", "refresh_token"),
+                param[str]("refresh_token", refresh_token),
+                *client_params,
             ),
             decoder=json_decoder[OAuthTokenRefreshable],
             error_mapper=oauth_error_response,
@@ -353,24 +351,22 @@ class AsyncAuthorizationCodeTokenSource(Generic[ScopeT]):
             build_url(self.authorization_url, query_params=_authorization_params(credentials, pkce))
         )
         headers, client_params = self.placement(credentials.client_id, credentials.client_secret)
-        return (
+        return unwrap(
             await self.client.execute(
                 http_method="POST",
                 url_template=self.token_url,
                 headers=headers,
                 body=form_body(
-                    (
-                        param[str]("grant_type", "authorization_code"),
-                        param[str]("code", code),
-                        param[str]("redirect_uri", credentials.redirect_uri),
-                        *_code_verifier_params(pkce),
-                        *client_params,
-                    )
+                    param[str]("grant_type", "authorization_code"),
+                    param[str]("code", code),
+                    param[str]("redirect_uri", credentials.redirect_uri),
+                    *_code_verifier_params(pkce),
+                    *client_params,
                 ),
-                decoder=json_decoder[OAuthTokenRefreshable],
+                decoder=async_json_decoder[OAuthTokenRefreshable],
                 error_mapper=oauth_error_response,
             )
-        ).unwrap()
+        )
 
     async def refresh(
         self, credentials: AsyncAuthorizationCodeCredentials[ScopeT], refresh_token: str
@@ -389,13 +385,11 @@ class AsyncAuthorizationCodeTokenSource(Generic[ScopeT]):
             url_template=self.refresh_url,
             headers=headers,
             body=form_body(
-                (
-                    param[str]("grant_type", "refresh_token"),
-                    param[str]("refresh_token", refresh_token),
-                    *client_params,
-                )
+                param[str]("grant_type", "refresh_token"),
+                param[str]("refresh_token", refresh_token),
+                *client_params,
             ),
-            decoder=json_decoder[OAuthTokenRefreshable],
+            decoder=async_json_decoder[OAuthTokenRefreshable],
             error_mapper=oauth_error_response,
         )
         return result.payload if isinstance(result, Success) else None

@@ -1,24 +1,18 @@
 [project]
 name = "frankfurter-api"
 version = "2.1.1"
-description = "Frankfurter is an open-source API for current and historical foreign exchange rates published by central banks."
+description = "The official Python library for the Frankfurter API API"
 maintainers = [
     { name = "APIMatic", email = "support@apimatic.io" },
 ]
 keywords = ["sdk", "api-client", "openapi", "rest", "http", "apimatic"]
-license = "MIT"                 # SPDX expression (PEP 639); poetry-core bundles the root LICENSE
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "httpx (>=0.28.1,<1.0.0)",
-    # 2.11 added the alias-control `model_config` keys core/models.py names --
-    # validate_by_name, validate_by_alias and serialize_by_alias. No 2.12-only pydantic API
-    # is used anywhere.
+    "httpx2 (>=2.13.1,<3.0.0)",
+    "certifi (>=2024.7.4)",
     "pydantic[email] (>=2.11.0,<3.0.0)",
-    # NotRequired / TypedDict backport for the 3.10 floor (both live in `typing` from 3.11),
-    # used by the model input companions; and TypeForm (PEP 747, added in 4.13.0), which
-    # core/ uses to type the runtime type expressions its factories accept. PEP 747 is Final
-    # and TypeForm reaches `typing` in 3.15, so both move when the floor does.
     "typing-extensions (>=4.13.0,<5.0.0)",
 ]
 
@@ -36,40 +30,31 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-# Must stay below every bare [project] key -- a sub-table header captures whatever follows it.
 [project.urls]
 Homepage = "https://github.com/lineofflight/frankfurter/issues"
 
 [dependency-groups]
 dev = [
-    # 2.2 is where PEP 747 TypeForm became default-on; below it, core/'s signatures need an
-    # --enable-incomplete-feature flag.
     "mypy (>=2.2.0,<3.0.0)",
     "ruff (>=0.14.14,<0.15.0)",
 ]
 
 
 [build-system]
-# 2.2.0 is the first release that understands PEP 639 -- below it the backend emits the
-# deprecated `License:` field, re-adds the license classifier and drops `:: 3.14`.
 requires = ["poetry-core>=2.2.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 
+[tool.poetry]
+packages = [{ include = "frankfurter_api" }]
+
+
 [tool.ruff]
-# target-version is inferred from requires-python -- the floor is single-sourced there
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "UP", "B", "RUF"]
-# Deliberately excluded:
-#   TC  - would move pydantic-validated imports under TYPE_CHECKING, breaking the
-#         runtime annotation resolution that pydantic depends on
-#   Q   - the CI-gated formatter normalizes quotes everywhere it runs
+select = ["A", "E", "W", "F", "I", "UP", "B", "RUF"]
 ignore = [
-    # Typographic punctuation flagged as confusable. Every docstring here is the spec
-    # author's own description, copied verbatim -- normalizing their apostrophes and
-    # dashes would silently alter the API's documentation.
     "RUF001", "RUF002", "RUF003",
 ]
 
@@ -82,7 +67,5 @@ files = ["frankfurter_api"]
 strict = true
 warn_unreachable = true
 enable_error_code = ["redundant-expr", "truthy-bool", "ignore-without-code", "possibly-undefined"]
-# already inside `strict` at mypy 2.3, pinned deliberately: `strict`'s flag set is versioned
-# and the dev floor spans >=2.2.0,<3.0.0
 warn_return_any = true
 pretty = true

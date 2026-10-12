@@ -1,4 +1,4 @@
-"""Rendering, normalizing and resolving request headers.
+"""Rendering, normalizing and resolving request headers, plus reading response headers.
 
 One place decides how header names reach the wire, so the choice is made once rather than at each
 endpoint. Names are lowercased: HTTP/1.1 treats them case-insensitively and HTTP/2 requires
@@ -20,10 +20,16 @@ single jar instead."""
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Final
+from typing import Any, Final, TypeVar
 
+from pydantic import ValidationError
+from typing_extensions import TypeForm
+
+from ..adapters import adapter_for, validation_target
 from ..params import Param
 from .wire import text_values
+
+T = TypeVar("T")
 
 COOKIE_HEADER: Final = "cookie"
 """The one field name this module knows, lowercased as every rendered name is.
@@ -142,3 +148,93 @@ def resolve_headers(
     if jar:
         resolved[COOKIE_HEADER] = jar
     return resolved
+
+
+def read_header(headers: Mapping[str, str], name: str, declared: TypeForm[T]) -> T | None:
+    """Read one response header as its declared type. Paging selectors that read a header use this.
+
+    The value is validated in lax mode, so ``read_header(headers, name, bool)`` accepts ``1``, ``0``,
+    ``true`` and ``false`` in any case.
+
+    Args:
+        headers: The response headers. Names may be in any case.
+        name: The header to read, matched case-insensitively.
+        declared: The type to validate the trimmed value into.
+
+    Returns:
+        The validated value. ``None`` if the header is missing, blank or fails validation, so a bad header
+        from the server never raises in the middle of a walk."""
+    text = find_header(headers, name)
+    if text is None:
+        return None
+    try:
+        return adapter_for(validation_target(declared)).validate_python(text)
+    except ValidationError:
+        return None
+
+
+def find_link_target(headers: Mapping[str, str], rel: str) -> str | None:
+    """Return the target of the first ``Link`` header entry whose ``rel`` includes ``rel``.
+
+    Entries are split on commas outside quotes, and parameters on semicolons outside quotes. ``rel`` is
+    matched case-insensitively against each entry's space-separated ``rel`` list. Backslash escapes inside
+    quotes are not unescaped.
+
+    Args:
+        headers: The response headers. Names may be in any case.
+        rel: The relation to find, such as ``"next"``.
+
+    Returns:
+        The target as written. ``None`` if there is no ``Link`` header, no entry has that ``rel``, or a
+        ``<`` has no closing ``>``."""
+    value = find_header(headers, "Link")
+    if value is None:
+        return None
+    index = 0
+    while (index := value.find("<", index)) >= 0:
+        target_end = value.find(">", index + 1)
+        if target_end < 0:
+            return None
+        target = value[index + 1 : target_end]
+        parameters_end = _find_unquoted(value, ",", target_end + 1)
+        if _rel_matches(value[target_end + 1 : parameters_end], rel):
+            return target
+        index = parameters_end
+    return None
+
+
+def find_header(headers: Mapping[str, str], name: str) -> str | None:
+    """Return the trimmed value of the first header named ``name``, matched case-insensitively.
+
+    A blank value counts as missing and returns ``None``. Used by :func:`read_header`,
+    :func:`find_link_target` and ``retries.retry_after_seconds``."""
+    value = next(
+        (field_value for field_name, field_value in headers.items() if field_name.lower() == name.lower()), None
+    )
+    if value is None:
+        return None
+    text = value.strip()
+    return text if text else None
+
+
+def _find_unquoted(text: str, delimiter: str, start: int) -> int:
+    in_quotes = False
+    for i in range(start, len(text)):
+        if text[i] == '"':
+            in_quotes = not in_quotes
+        elif text[i] == delimiter and not in_quotes:
+            return i
+    return len(text)
+
+
+def _rel_matches(parameters: str, rel: str) -> bool:
+    start = 0
+    while start < len(parameters):
+        end = _find_unquoted(parameters, ";", start)
+        parameter = parameters[start:end]
+        start = end + 1
+        name, separator, value = parameter.partition("=")
+        if not separator or name.strip().lower() != "rel":
+            continue
+        return any(rel_type.lower() == rel.lower() for rel_type in value.strip().strip('"').split(" "))
+    return False

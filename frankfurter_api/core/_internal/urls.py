@@ -1,12 +1,15 @@
 """Turning a :class:`UrlTemplate` plus parameters into a request URL.
 
-Five pure functions in three groups. :func:`resolve_params` combines the parameters an API applies
+Six pure functions in four groups. :func:`resolve_params` combines the parameters an API applies
 to every request with the ones a single call declares; :func:`render_segments` turns each of those
 into the URL segments it contributes, reading its declared type; :func:`build_url` then renders the
 result, with server variables filling the base URL's placeholders, path parameters filling the
 path's, and query parameters flattened and encoded onto the end. Resolution stays separate from
-rendering so each can be tested on its own, and none of the five holds state -- there is nothing to
-configure, so there is nothing to construct."""
+rendering so each can be tested on its own, and none of the six holds state -- there is nothing to
+configure, so there is nothing to construct.
+
+:func:`strip_query` is the one that unbuilds rather than builds: the form of a URL that may be
+printed. It lives here because it is a fact about a URL's shape, and it has more than one reader."""
 
 from __future__ import annotations
 
@@ -164,3 +167,20 @@ def build_url(
 
     query = encode_query(query_params)
     return f"{url}?{query}" if query else url
+
+
+def strip_query(url: str) -> str:
+    """Return ``url`` without its query string -- the form of it that may be printed.
+
+    A query-placed api key lives in that string, folded onto the URL by :func:`resolve_params` like
+    any other query parameter, so no diagnostic carries one: not a request's repr, not the warning
+    naming a response nobody closed. A string form rather than redaction -- the URL a request is
+    sent to is never altered, only what is said about it afterwards.
+
+    Args:
+        url: The URL to describe.
+
+    Returns:
+        Everything before the first ``?``, or the whole of ``url`` when it has none."""
+    path, _, _ = url.partition("?")
+    return path
